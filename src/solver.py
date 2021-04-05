@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from src.option import default_hparas
 from src.util import human_format, Timer
 
-
+## Acting like Trainer in PytorcH?
 class BaseSolver():
     ''' 
     Prototype Solver for all kinds of tasks
@@ -27,7 +27,7 @@ class BaseSolver():
             setattr(self, k, v)
         self.device = torch.device(
             'cuda') if self.paras.gpu and torch.cuda.is_available() else torch.device('cpu')
-        self.amp = paras.amp
+        self.amp = paras.amp ## Don't know whats amp
 
         # Name experiment
         self.exp_name = paras.name
@@ -73,7 +73,7 @@ class BaseSolver():
             self.verbose('Evaluating result of tr. config @ {}'.format(
                 config['src']['config']))
 
-    def backward(self, loss):
+    def backward(self, loss): ## ?
         '''
         Standard backward step with self.timer and debugger
         Arguments

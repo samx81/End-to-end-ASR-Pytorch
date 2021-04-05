@@ -113,7 +113,7 @@ class ExtractAudioFeature(nn.Module):
 
 
 def create_transform(audio_config):
-    feat_type = audio_config.pop("feat_type")
+    feat_type = audio_config.pop("feat_type") ## Pop feat_type from `config` dict
     feat_dim = audio_config.pop("feat_dim")
 
     delta_order = audio_config.pop("delta_order", 0)
@@ -131,3 +131,4 @@ def create_transform(audio_config):
     transforms.append(Postprocess())
 
     return nn.Sequential(*transforms), feat_dim * (delta_order + 1)
+    ## RETURN audio_transform, feat_dim

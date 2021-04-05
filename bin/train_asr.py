@@ -6,6 +6,14 @@ from src.optim import Optimizer
 from src.data import load_dataset
 from src.util import human_format, cal_er, feat_to_fig
 
+# Back-tracing
+# Here's are codes running in main.py
+'''
+    solver = Solver(config, paras, mode)
+    solver.load_data()
+    solver.set_model()
+    solver.exec()
+'''
 
 class Solver(BaseSolver):
     ''' Solver for training'''
@@ -15,7 +23,7 @@ class Solver(BaseSolver):
         # Logger settings
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
         # Curriculum learning affects data loader
-        self.curriculum = self.config['hparas']['curriculum']
+        self.curriculum = self.config['hparas']['curriculum'] ## A param, dont know what it is
 
     def fetch_data(self, data):
         ''' Move data to device and compute text seq. length'''
@@ -32,6 +40,8 @@ class Solver(BaseSolver):
         self.tr_set, self.dv_set, self.feat_dim, self.vocab_size, self.tokenizer, msg = \
             load_dataset(self.paras.njobs, self.paras.gpu, self.paras.pin_memory,
                          self.curriculum > 0, **self.config['data'])
+                         ## from src.data import load_dataset
+                         ## curriculum refers to ascending
         self.verbose(msg)
 
     def set_model(self):

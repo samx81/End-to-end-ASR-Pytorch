@@ -40,6 +40,8 @@ class LibriDataset(Dataset):
         # Read text
         text = Parallel(n_jobs=READ_FILE_THREADS)(
             delayed(read_text)(str(f)) for f in file_list)
+
+        ## NOTE: Refer to uttrence? 
         #text = Parallel(n_jobs=-1)(delayed(tokenizer.encode)(txt) for txt in text)
         text = [tokenizer.encode(txt) for txt in text]
 

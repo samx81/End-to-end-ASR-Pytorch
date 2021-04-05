@@ -10,7 +10,10 @@ HALF_BATCHSIZE_AUDIO_LEN = 800
 # Note: Bucketing may cause random sampling to be biased (less sampled for those length > HALF_BATCHSIZE_AUDIO_LEN )
 HALF_BATCHSIZE_TEXT_LEN = 150
 
+## Objective here:
+''' load_dataset from train_asr.py'''
 
+## To be used in pytorch dataloader
 def collect_audio_batch(batch, audio_transform, mode):
     '''Collects a batch, should be list of tuples (audio_path <str>, list of int token <list>) 
        e.g. [(file1,txt1),(file2,txt2),...] '''
@@ -19,23 +22,23 @@ def collect_audio_batch(batch, audio_transform, mode):
     if type(batch[0]) is not tuple:
         batch = batch[0]
     # Make sure that batch size is reasonable
-    first_len = audio_transform(str(batch[0][0])).shape[0]
+    first_len = audio_transform(str(batch[0][0])).shape[0] ## try to run one
     if first_len > HALF_BATCHSIZE_AUDIO_LEN and mode == 'train':
-        batch = batch[:len(batch)//2]
+        batch = batch[:len(batch)//2] ## integer division
 
     # Read batch
     file, audio_feat, audio_len, text = [], [], [], []
     with torch.no_grad():
         for b in batch:
-            file.append(str(b[0]).split('/')[-1].split('.')[0])
-            feat = audio_transform(str(b[0]))
+            file.append(str(b[0]).split('/')[-1].split('.')[0]) # get only filename
+            feat = audio_transform(str(b[0])) ## put path to get sound features
             audio_feat.append(feat)
             audio_len.append(len(feat))
             text.append(torch.LongTensor(b[1]))
     # Descending audio length within each batch
     audio_len, file, audio_feat, text = zip(*[(feat_len, f_name, feat, txt)
                                               for feat_len, f_name, feat, txt in sorted(zip(audio_len, file, audio_feat, text), reverse=True, key=lambda x:x[0])])
-    # Zero-padding
+    # Zero-padding ## (to get a evenly batch)
     audio_feat = pad_sequence(audio_feat, batch_first=True)
     text = pad_sequence(text, batch_first=True)
     audio_len = torch.LongTensor(audio_len)
@@ -75,13 +78,15 @@ def create_dataset(tokenizer, ascending, name, path, bucketing, batch_size,
     if train_split is not None:
         # Training mode
         mode = 'train'
+        ## Training_loader_batch_size
         tr_loader_bs = 1 if bucketing and (not ascending) else batch_size
         bucket_size = batch_size if bucketing and (
             not ascending) else 1  # Ascending without bucketing
         # Do not use bucketing for dev set
         dv_set = Dataset(path, dev_split, tokenizer, 1)
-        tr_set = Dataset(path, train_split, tokenizer,
-                         bucket_size, ascending=ascending)
+        tr_set = Dataset(path, train_split, tokenizer, bucket_size, ascending=ascending)
+        ## ascending here is refer to sorting method
+
         # Messages to show
         msg_list = _data_msg(name, path, train_split.__str__(), len(tr_set),
                              dev_split.__str__(), len(dv_set), batch_size, bucketing)
@@ -130,10 +135,15 @@ def load_dataset(n_jobs, use_gpu, pin_memory, ascending, corpus, audio, text):
     ''' Prepare dataloader for training/validation'''
 
     # Audio feature extractor
-    audio_transform, feat_dim = create_transform(audio.copy())
+    audio_transform, feat_dim = create_transform(audio.copy())  ## from src.audio import create_transform
+    ''' Returns a pytorch seq module dealing audio transform '''
     # Text tokenizer
-    tokenizer = load_text_encoder(**text)
+    tokenizer = load_text_encoder(**text)                       ## from src.text import load_text_encoder
     # Dataset (in testing mode, tr_set=dv_set, dv_set=tt_set)
+
+        '''
+            Returns train/dev (librispeech) dataset objects with other param
+        '''
     tr_set, dv_set, tr_loader_bs, dv_loader_bs, mode, data_msg = create_dataset(
         tokenizer, ascending, **corpus)
     # Collect function
@@ -145,6 +155,16 @@ def load_dataset(n_jobs, use_gpu, pin_memory, ascending, corpus, audio, text):
     shuffle = (mode == 'train' and not ascending)
     drop_last = shuffle
     # Create data loader
+    
+    '''
+    DataLoader(dataset, batch_size=1, shuffle=False, sampler=None,
+           batch_sampler=None, num_workers=0, collate_fn=None,
+           pin_memory=False, drop_last=False, timeout=0,
+           worker_init_fn=None, *, prefetch_factor=2,
+           persistent_workers=False)
+    '''
+    # NOTE: Main DataLoader
+    ## What is `text`
     tr_set = DataLoader(tr_set, batch_size=tr_loader_bs, shuffle=shuffle, drop_last=drop_last, collate_fn=collect_tr,
                         num_workers=n_jobs, pin_memory=use_gpu)
     dv_set = DataLoader(dv_set, batch_size=dv_loader_bs, shuffle=False, drop_last=False, collate_fn=collect_dv,
@@ -184,8 +204,8 @@ def _data_msg(name, path, train_split, tr_set, dev_split, dv_set, batch_size, bu
     msg_list.append('Data spec. | Corpus = {} (from {})'.format(name, path))
     msg_list.append('           | Train sets = {}\t| Number of utts = {}'.format(
         train_split, tr_set))
-    msg_list.append(
-        '           | Dev sets = {}\t| Number of utts = {}'.format(dev_split, dv_set))
+    msg_list.append('           | Dev sets = {}\t| Number of utts = {}'.format(
+        dev_split, dv_set))
     msg_list.append('           | Batch size = {}\t\t| Bucketing = {}'.format(
         batch_size, bucketing))
     return msg_list

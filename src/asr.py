@@ -24,15 +24,16 @@ class ASR(nn.Module):
         self.lm = None
 
         # Modules
-        self.encoder = Encoder(input_size, **encoder)
-        if self.enable_ctc:
-            self.ctc_layer = nn.Linear(self.encoder.out_dim, vocab_size)
-        if self.enable_att:
-            self.dec_dim = decoder['dim']
-            self.pre_embed = nn.Embedding(vocab_size, self.dec_dim)
+        self.encoder = Encoder(input_size, **encoder) ## NOTE: Encoder Here
+        
+        if self.enable_ctc: 
+            self.ctc_layer = nn.Linear(self.encoder.out_dim, vocab_size) ## why?
+        if self.enable_att: 
+            self.dec_dim    = decoder['dim']
+            self.pre_embed  = nn.Embedding(vocab_size, self.dec_dim)
             self.embed_drop = nn.Dropout(emb_drop)
-            self.decoder = Decoder(
-                self.encoder.out_dim+self.dec_dim, vocab_size, **decoder)
+            self.decoder    = Decoder(
+                self.encoder.out_dim+self.dec_dim, vocab_size, **decoder) ## NOTE: Decoder Here
             query_dim = self.dec_dim*self.decoder.layer
             self.attention = Attention(
                 self.encoder.out_dim, query_dim, **attention)
@@ -42,6 +43,8 @@ class ASR(nn.Module):
             self.apply(init_weights)
             if self.enable_att:
                 for l in range(self.decoder.layer):
+                    ## LSTM/GRU layer here is a group of N layers of network, so each layer needs to init their weights.
+
                     bias = getattr(self.decoder.layers, 'bias_ih_l{}'.format(l))
                     bias = init_gate(bias)
 
@@ -56,11 +59,9 @@ class ASR(nn.Module):
         msg.append('Model spec.| Encoder\'s downsampling rate of time axis is {}.'.format(
             self.encoder.sample_rate))
         if self.encoder.vgg:
-            msg.append(
-                '           | VGG Extractor w/ time downsampling rate = 4 in encoder enabled.')
+            msg.append('           | VGG Extractor w/ time downsampling rate = 4 in encoder enabled.')
         if self.encoder.cnn:
-            msg.append(
-                '           | CNN Extractor w/ time downsampling rate = 4 in encoder enabled.')
+            msg.append('           | CNN Extractor w/ time downsampling rate = 4 in encoder enabled.')
         if self.enable_ctc:
             msg.append('           | CTC training on encoder enabled ( lambda = {}).'.format(
                 self.ctc_weight))
@@ -172,6 +173,7 @@ class Decoder(nn.Module):
         self.enable_cell = module == 'LSTM'
 
         # Modules
+        '''getattr Calls with str, equals nn.${module}'''
         self.layers = getattr(nn, module)(
             input_dim, dim, num_layers=layer, dropout=dropout, batch_first=True)
         self.char_trans = nn.Linear(dim, vocab_size)
@@ -335,21 +337,20 @@ class Encoder(nn.Module):
 
         # Prenet on audio feature
         if self.vgg:
-            vgg_extractor = VGGExtractor(input_size)
-            module_list.append(vgg_extractor)
-            input_dim = vgg_extractor.out_dim
-            self.sample_rate = self.sample_rate*4
+            extractor = VGGExtractor(input_size)
         if self.cnn:
-            cnn_extractor = CNNExtractor(input_size, out_dim=dim[0])
-            module_list.append(cnn_extractor)
-            input_dim = cnn_extractor.out_dim
-            self.sample_rate = self.sample_rate*4
+            extractor = CNNExtractor(input_size, out_dim=dim[0])
+
+        module_list.append(extractor)
+        input_dim = vgg_extractor.out_dim
+        self.sample_rate = self.sample_rate*4
 
         # Recurrent encoder
         if module in ['LSTM', 'GRU']:
             for l in range(num_layers):
-                module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                            sample_rate[l], sample_style, proj[l]))
+                module_list.append(
+                    RNNLayer(input_dim, module, dim[l], bidirection, 
+                            dropout[l], layer_norm[l],sample_rate[l], sample_style, proj[l]))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:
@@ -362,5 +363,5 @@ class Encoder(nn.Module):
 
     def forward(self, input_x, enc_len):
         for _, layer in enumerate(self.layers):
-            input_x, enc_len = layer(input_x, enc_len)
+            input_x, enc_len = layer(input_x, enc_len) ## NOTE: Simple sequential passing.
         return input_x, enc_len
