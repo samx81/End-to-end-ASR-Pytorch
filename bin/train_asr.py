@@ -95,6 +95,7 @@ class Solver(BaseSolver):
         while self.step < self.max_step:
             # Renew dataloader to enable random sampling
             if self.curriculum > 0 and n_epochs == self.curriculum:
+                ## NOTE: Skip reviewing this section
                 self.verbose(
                     'Curriculum learning ends after {} epochs, starting random sampling.'.format(n_epochs))
                 self.tr_set, _, _, _, _, _ = \
@@ -102,10 +103,11 @@ class Solver(BaseSolver):
                                  False, **self.config['data'])
             for data in self.tr_set:
                 # Pre-step : update tf_rate/lr_rate and do zero_grad
+                ## Teacher Forcing and Learning rates
                 tf_rate = self.optimizer.pre_step(self.step)
                 total_loss = 0
 
-                # Fetch data
+                # Fetch data ## throw into cuda
                 feat, feat_len, txt, txt_len = self.fetch_data(data)
                 self.timer.cnt('rd')
 
@@ -174,6 +176,7 @@ class Solver(BaseSolver):
                 if self.step > self.max_step:
                     break
             n_epochs += 1
+            self.verbose('{} epochs Finished.'.format(n_epochs))
         self.log.close()
 
     def validate(self):

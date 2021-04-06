@@ -111,9 +111,11 @@ class ASR(nn.Module):
 
             # Decode
             for t in range(decode_step):
+                ## NOTE: ATTEND
                 # Attend (inputs current state of first layer, encoded features)
                 attn, context = self.attention(
                     self.decoder.get_query(), encode_feature, encode_len)
+                ## NOTE: DECODE
                 # Decode (inputs context + embedded last character)
                 decoder_input = torch.cat([last_char, context], dim=-1)
                 cur_char, d_state = self.decoder(decoder_input)
@@ -243,6 +245,8 @@ class Attention(nn.Module):
         self.num_head = num_head
 
         # Linear proj. before attention
+
+        ## Q, K, V
         self.proj_q = nn.Linear(q_dim, dim*num_head)
         self.proj_k = nn.Linear(v_dim, dim*num_head)
         self.v_proj = v_proj
