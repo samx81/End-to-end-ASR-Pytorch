@@ -7,8 +7,8 @@ data:
     bucketing: True                       # Enable/Disable bucketing 
     batch_size: 32
   audio:                                  # Attributes of audio feature
-    feat_type: 'mfcc'
-    feat_dim:  80
+    feat_type: 'fbank'
+    feat_dim:  40
     frame_length: 25                      # ms
     frame_shift: 10                       # ms
     dither: 0                             # random dither audio, 0: no dither
@@ -29,6 +29,7 @@ hparas:                                   # Experiment hyper-parameters
   lr: 0.001
   eps: 0.00000001                         # 1e-8
   lr_scheduler: 'spec-aug-basic'                   # 'fixed'/'warmup'
+  scheduler_step_multiplier: 16           # 512/batch_size
   curriculum: 0
 
 model:                                    # Model architecture

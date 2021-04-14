@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 
 class Optimizer():
-    def __init__(self, parameters, optimizer, lr, eps, lr_scheduler, tf_start=1, tf_end=1, tf_step=1, **kwargs):
+    def __init__(self, parameters, optimizer, lr, eps, lr_scheduler, tf_start=1, tf_end=1, tf_step=1, scheduler_step_multiplier,**kwargs):
 
         # Setup teacher forcing scheduler
         self.tf_type = tf_end != 1
@@ -23,8 +23,8 @@ class Optimizer():
             self.opt = opt(parameters, lr=1.0)
         elif lr_scheduler == 'spec-aug-basic':
             # Scheduler from https://arxiv.org/pdf/1904.08779.pdf
-            self.lr_scheduler = partial(speech_aug_scheduler, s_r=500,
-                                        s_i=20000, s_f=80000, peak_lr=lr)
+            self.lr_scheduler = partial(speech_aug_scheduler, s_r=scheduler_step_multiplier*500,
+                                        s_i=scheduler_step_multiplier*20000, s_f=scheduler_step_multiplier*80000, peak_lr=lr)
             self.opt = opt(parameters, lr=lr, eps=eps)
         elif lr_scheduler == 'spec-aug-double':
             # Scheduler from https://arxiv.org/pdf/1904.08779.pdf
