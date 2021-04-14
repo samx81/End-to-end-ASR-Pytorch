@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 
 class Optimizer():
-    def __init__(self, parameters, optimizer, lr, eps, lr_scheduler, tf_start=1, tf_end=1, tf_step=1, scheduler_step_multiplier,**kwargs):
+    def __init__(self, parameters, optimizer, lr, eps, lr_scheduler, scheduler_step_multiplier, tf_start=1, tf_end=1, tf_step=1,**kwargs):
 
         # Setup teacher forcing scheduler
         self.tf_type = tf_end != 1
